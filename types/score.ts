@@ -1,6 +1,6 @@
-import { Player } from './player';
+import { Player, isSamePlayer } from "./player";
 
-// Surely not the best choice
+// Score Types
 export type Point = number;
 
 export type PointsData = {
@@ -9,31 +9,82 @@ export type PointsData = {
 };
 
 export type Points = {
-  kind: 'POINTS';
+  kind: "POINTS";
   pointsData: PointsData;
 };
 
-export const points = (
-  playerOnePoints: Point,
-  playerTwoPoints: Point
-): Points => ({
-  kind: 'POINTS',
-  pointsData: {
-    PLAYER_ONE: playerOnePoints,
-    PLAYER_TWO: playerTwoPoints,
-  },
-});
+export type Deuce = { kind: "DEUCE" };
 
-// Exerice 0: Write all type constructors of Points, Deuce, Forty and Advantage types.
-
-export type Game = {
-  kind: 'GAME';
-  player: Player; // Player has won
+export type Forty = {
+  kind: "FORTY";
+  player: Player;
+  otherPlayerPoints: Point;
 };
 
-export const game = (winner: Player): Game => ({
-  kind: 'GAME',
-  player: winner,
+export type Advantage = {
+  kind: "ADVANTAGE";
+  player: Player;
+};
+
+export type Game = {
+  kind: "GAME";
+  player: Player;
+};
+
+export type Score = Points | Deuce | Forty | Advantage | Game;
+
+// Function to get next score
+export const nextScore = (currentScore: Score, pointWinner: Player): Score => {
+  switch (currentScore.kind) {
+    case "POINTS": {
+      const newPoints = {
+        ...currentScore.pointsData,
+        [pointWinner]: currentScore.pointsData[pointWinner] + 15,
+      };
+
+      const playerOnePoints = newPoints.PLAYER_ONE;
+      const playerTwoPoints = newPoints.PLAYER_TWO;
+
+      if (playerOnePoints >= 40 && playerTwoPoints >= 40) {
+        return deuce();
+      }
+
+      if (playerOnePoints === 40 || playerTwoPoints === 40) {
+        return forty(pointWinner, newPoints[pointWinner === "PLAYER_ONE" ? "PLAYER_TWO" : "PLAYER_ONE"]);
+      }
+
+      return { kind: "POINTS", pointsData: newPoints };
+    }
+
+    case "DEUCE":
+      return advantage(pointWinner);
+
+    case "FORTY":
+      return isSamePlayer(pointWinner, currentScore.player) ? game(pointWinner) : deuce();
+
+    case "ADVANTAGE":
+      return isSamePlayer(pointWinner, currentScore.player) ? game(pointWinner) : deuce();
+
+    case "GAME":
+      return currentScore; // No changes after game is won
+  }
+};
+
+// Type Constructors
+export const deuce = (): Deuce => ({ kind: "DEUCE" });
+
+export const forty = (player: Player, otherPlayerPoints: Point): Forty => ({
+  kind: "FORTY",
+  player,
+  otherPlayerPoints,
 });
 
-export type Score = Points | Game;
+export const advantage = (player: Player): Advantage => ({
+  kind: "ADVANTAGE",
+  player,
+});
+
+export const game = (winner: Player): Game => ({
+  kind: "GAME",
+  player: winner,
+});
