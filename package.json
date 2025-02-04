@@ -7,6 +7,7 @@
     "test": "jest --watchAll",
     "tsc": "tsc",
     "start": "ts-node index.ts"
+
   },
   "author": "Quentin Burg",
   "license": "ISC",
